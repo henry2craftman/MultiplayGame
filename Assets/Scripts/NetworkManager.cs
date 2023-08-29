@@ -5,83 +5,124 @@ using Photon.Pun;
 using Photon.Realtime;
 using UnityEngine.UI;
 using TMPro;
+using UnityEngine.SceneManagement;
 
 public class NetworkManager : MonoBehaviourPunCallbacks
 {
     public TMP_Text StatusText;
     public TMP_InputField roomInput, NickNameInput;
+    public PhotonView playerPrefab;
 
-
-    void Awake() => Screen.SetResolution(960, 540, false);
-
-    void Update() => StatusText.text = PhotonNetwork.NetworkClientState.ToString();
-
-
-
-    public void Connect() => PhotonNetwork.ConnectUsingSettings();
-
-    public override void OnConnectedToMaster()
+    void Awake()
     {
-        print("¼­¹öÁ¢¼Ó¿Ï·á");
-        PhotonNetwork.LocalPlayer.NickName = NickNameInput.text;
+        Screen.SetResolution(960, 540, false);
+        //DontDestroyOnLoad(gameObject);
+    }
+
+    void Update()
+    {
+        print(PhotonNetwork.IsConnected);
+        StatusText.text = PhotonNetwork.NetworkClientState.ToString();
+        if(Input.GetKeyDown(KeyCode.Space))
+            Info();
     }
 
 
+    // 1. ë¡œê·¸ì¸ ì‹œ ì„œë²„ ì ‘ì†
+    public void Connect()
+    {
+        PhotonNetwork.ConnectUsingSettings();
+    }
+    
+
+    // 2-1. ì„œë²„ ì—°ê²° í™•ì¸ -> ì—°ê²° ì™„ë£Œ
+    public override void OnConnectedToMaster()
+    {
+        print("ì„œë²„ ì ‘ì†ì™„ë£Œ");
+        //PhotonNetwork.LocalPlayer.NickName = NickNameInput.text;
+        //SceneManager.LoadScene(1);
+    }
 
     public void Disconnect() => PhotonNetwork.Disconnect();
 
-    public override void OnDisconnected(DisconnectCause cause) => print("¿¬°á²÷±è");
+    // 2-2. ì„œë²„ ì—°ê²° í™•ì¸ -> ì—°ê²°ë˜ì§€ ì•ŠìŒ
+    public override void OnDisconnected(DisconnectCause cause) => print("ì—°ê²° ëŠê¹€");
 
 
-
+    // 3. ë¡œë¹„ ì ‘ì†
     public void JoinLobby() => PhotonNetwork.JoinLobby();
 
-    public override void OnJoinedLobby() => print("·ÎºñÁ¢¼Ó¿Ï·á");
+    public override void OnJoinedLobby()
+    {
+        print("ë¡œë¹„ì ‘ì†ì™„ë£Œ");
+    } 
 
 
+    // ë¡œë¹„ì— ìˆëŠ” ë™ì•ˆ ë£¸ ì •ë³´ ì—…ë°ì´íŠ¸ì‹œ ë¶ˆëŸ¬ì˜´
+    public override void OnRoomListUpdate(List<RoomInfo> roomList)
+    {
+        for (int i = 0; i < roomList.Count; i++)
+        {
+            print(roomList[i].Name);
+        }
+    }
 
+    // ë°© ë§Œë“¤ê¸°
     public void CreateRoom() => PhotonNetwork.CreateRoom(roomInput.text, new RoomOptions { MaxPlayers = 2 });
 
-    public void JoinRoom() => PhotonNetwork.JoinRoom(roomInput.text);
+    // íŠ¹ì • ë°© ì ‘ì†í•˜ê¸°
+    public void JoinRoom()
+    {
+        PhotonNetwork.JoinRoom(roomInput.text);
+        PhotonNetwork.Instantiate(playerPrefab.name, Vector3.zero, Quaternion.identity);
+    } 
 
-    public void JoinOrCreateRoom() => PhotonNetwork.JoinOrCreateRoom(roomInput.text, new RoomOptions { MaxPlayers = 2 }, null);
+    public void JoinOrCreateRoom()
+    {
+        PhotonNetwork.JoinOrCreateRoom(roomInput.text, new RoomOptions { MaxPlayers = 2 }, null);
+        PhotonNetwork.Instantiate(playerPrefab.name, Vector3.zero, Quaternion.identity);
+    }
 
-    public void JoinRandomRoom() => PhotonNetwork.JoinRandomRoom();
+    public void JoinRandomRoom()
+    {
+        PhotonNetwork.JoinRandomRoom();
+        PhotonNetwork.Instantiate(playerPrefab.name, Vector3.zero, Quaternion.identity);
+    }
 
     public void LeaveRoom() => PhotonNetwork.LeaveRoom();
 
-    public override void OnCreatedRoom() => print("¹æ¸¸µé±â¿Ï·á");
+    public override void OnCreatedRoom() => print("ë°© ìƒì„± ì™„ë£Œ");
 
-    public override void OnJoinedRoom() => print("¹æÂü°¡¿Ï·á");
+    public override void OnJoinedRoom() => print("ë°© ì ‘ì† ì™„ë£Œ");
 
-    public override void OnCreateRoomFailed(short returnCode, string message) => print("¹æ¸¸µé±â½ÇÆĞ");
+    public override void OnCreateRoomFailed(short returnCode, string message) => print("ë°© ë§Œë“¤ê¸° ì‹¤íŒ¨");
 
-    public override void OnJoinRoomFailed(short returnCode, string message) => print("¹æÂü°¡½ÇÆĞ");
+    public override void OnJoinRoomFailed(short returnCode, string message) => print("ë°© ì ‘ì† ì‹¤íŒ¨");
 
-    public override void OnJoinRandomFailed(short returnCode, string message) => print("¹æ·£´ıÂü°¡½ÇÆĞ");
+    public override void OnJoinRandomFailed(short returnCode, string message) => print("ëœë¤ ë°© ì°¸ê°€ ì‹¤íŒ¨");
 
 
 
-    [ContextMenu("Á¤º¸")]
+    [ContextMenu("ì •ë³´")]
     void Info()
     {
         if (PhotonNetwork.InRoom)
         {
-            print("ÇöÀç ¹æ ÀÌ¸§ : " + PhotonNetwork.CurrentRoom.Name);
-            print("ÇöÀç ¹æ ÀÎ¿ø¼ö : " + PhotonNetwork.CurrentRoom.PlayerCount);
-            print("ÇöÀç ¹æ ÃÖ´ëÀÎ¿ø¼ö : " + PhotonNetwork.CurrentRoom.MaxPlayers);
+            print("í˜„ì¬ ë°© ì´ë¦„ : " + PhotonNetwork.CurrentRoom.Name);
+            print("í˜„ì¬ ë°© ì¸ì›ìˆ˜ : " + PhotonNetwork.CurrentRoom.PlayerCount);
+            print("í˜„ì¬ ë°© ìµœëŒ€ ì¸ì›ìˆ˜ : " + PhotonNetwork.CurrentRoom.MaxPlayers);
 
-            string playerStr = "¹æ¿¡ ÀÖ´Â ÇÃ·¹ÀÌ¾î ¸ñ·Ï : ";
+            string playerStr = "ë°©ì— ìˆëŠ” í”Œë ˆì´ì–´ ëª©ë¡ : ";
             for (int i = 0; i < PhotonNetwork.PlayerList.Length; i++) playerStr += PhotonNetwork.PlayerList[i].NickName + ", ";
             print(playerStr);
         }
         else
         {
-            print("Á¢¼ÓÇÑ ÀÎ¿ø ¼ö : " + PhotonNetwork.CountOfPlayers);
-            print("¹æ °³¼ö : " + PhotonNetwork.CountOfRooms);
-            print("¸ğµç ¹æ¿¡ ÀÖ´Â ÀÎ¿ø ¼ö : " + PhotonNetwork.CountOfPlayersInRooms);
-            print("·Îºñ¿¡ ÀÖ´ÂÁö? : " + PhotonNetwork.InLobby);
-            print("¿¬°áµÆ´ÂÁö? : " + PhotonNetwork.IsConnected);
+            print("ì ‘ì†í•œ ì¸ì› ìˆ˜ : " + PhotonNetwork.CountOfPlayers);
+            print("ë°© ê°œìˆ˜ : " + PhotonNetwork.CountOfRooms);
+            print("ëª¨ë“  ë°©ì— ìˆëŠ” ì¸ì› ìˆ˜ : " + PhotonNetwork.CountOfPlayersInRooms);
+            print("ë¡œë¹„ì¸ì§€ í™•ì¸ : " + PhotonNetwork.InLobby);
+            print("ì—°ê²° ëëŠ”ì§€ í™•ì¸: " + PhotonNetwork.IsConnected);
         }
     }
 }
